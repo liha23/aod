@@ -265,7 +265,7 @@
     </style>
 </head>
 <body>
-    <div class="wake-lock-indicator" id="wakeLockIndicator" role="status" aria-label="Screen Wake Lock Status: Active" title="Screen Wake Lock Status"></div>
+    <div class="wake-lock-indicator" id="wakeLockIndicator" role="status" aria-label="Screen Wake Lock Status: Initializing" title="Screen Wake Lock Status"></div>
     
     <div class="time-container" id="timeDisplay">
         <span class="digit" id="hour1">0</span>
@@ -275,7 +275,7 @@
         <span class="digit" id="minute2">0</span>
     </div>
 
-    <button class="fullscreen-btn" id="fullscreenBtn">
+    <button class="fullscreen-btn" id="fullscreenBtn" aria-label="Toggle fullscreen mode">
         <span class="icon" id="fullscreenIcon">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
@@ -333,6 +333,7 @@
             minute1: document.getElementById('minute1'),
             minute2: document.getElementById('minute2')
         };
+        const digitTimeouts = {}; // Store timeout IDs for cleanup
 
         function updateTime() {
             const now = new Date();
@@ -350,11 +351,17 @@
             const currentValue = element.textContent;
             
             if (currentValue !== newValue) {
+                // Clear any existing timeout for this digit
+                if (digitTimeouts[id]) {
+                    clearTimeout(digitTimeouts[id]);
+                }
+                
                 element.classList.add('changing');
                 
-                setTimeout(() => {
+                digitTimeouts[id] = setTimeout(() => {
                     element.textContent = newValue;
                     element.classList.remove('changing');
+                    digitTimeouts[id] = null;
                 }, DIGIT_TRANSITION_DURATION);
             }
         }
@@ -371,15 +378,17 @@
         function updateFullscreenButton() {
             if (document.fullscreenElement) {
                 fullscreenText.textContent = 'Exit Fullscreen';
+                fullscreenBtn.setAttribute('aria-label', 'Exit fullscreen mode');
                 fullscreenIcon.innerHTML = `
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
                     </svg>
                 `;
             } else {
                 fullscreenText.textContent = 'Fullscreen';
+                fullscreenBtn.setAttribute('aria-label', 'Enter fullscreen mode');
                 fullscreenIcon.innerHTML = `
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
                     </svg>
                 `;
