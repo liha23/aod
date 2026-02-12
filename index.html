@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Time Display</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f1421 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            position: relative;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .time-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.2em;
+            font-size: clamp(4rem, 20vw, 12rem);
+            font-weight: 300;
+            letter-spacing: 0.05em;
+            color: #ffffff;
+            text-shadow: 0 0 40px rgba(59, 130, 246, 0.5),
+                         0 0 80px rgba(59, 130, 246, 0.3);
+        }
+
+        .digit {
+            display: inline-block;
+            min-width: 0.6em;
+            text-align: center;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 50%, #2563eb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .digit.changing {
+            transform: translateY(-10px);
+            opacity: 0;
+        }
+
+        .separator {
+            display: inline-block;
+            animation: pulse 2s ease-in-out infinite;
+            background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 50%, #2563eb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        @keyframes pulse {
+            0%, 100% { 
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% { 
+                opacity: 0.3;
+                transform: scale(0.95);
+            }
+        }
+
+        .fullscreen-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(59, 130, 246, 0.2);
+            border: 2px solid rgba(59, 130, 246, 0.4);
+            border-radius: 50px;
+            padding: 12px 24px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 10;
+        }
+
+        .fullscreen-btn:hover {
+            background: rgba(59, 130, 246, 0.3);
+            border-color: rgba(59, 130, 246, 0.6);
+            color: rgba(255, 255, 255, 0.9);
+            transform: translateX(-50%) translateY(-2px);
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+        }
+
+        .fullscreen-btn:active {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .icon {
+            width: 16px;
+            height: 16px;
+            display: inline-block;
+        }
+
+        .wake-lock-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(34, 197, 94, 0.6);
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.8);
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .wake-lock-indicator.inactive {
+            background: rgba(239, 68, 68, 0.4);
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+        }
+
+        @media (max-width: 768px) {
+            .fullscreen-btn {
+                padding: 10px 20px;
+                font-size: 0.85rem;
+                bottom: 15px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .time-container {
+                gap: 0.1em;
+            }
+            
+            .fullscreen-btn {
+                padding: 8px 16px;
+                font-size: 0.8rem;
+                bottom: 10px;
+            }
+
+            .wake-lock-indicator {
+                top: 15px;
+                right: 15px;
+                width: 10px;
+                height: 10px;
+            }
+        }
+
+        /* Fade in animation on load */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .time-container {
+            animation: fadeIn 0.8s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="wake-lock-indicator" id="wakeLockIndicator" title="Screen Wake Lock Status"></div>
+    
+    <div class="time-container" id="timeDisplay">
+        <span class="digit" id="hour1">0</span>
+        <span class="digit" id="hour2">0</span>
+        <span class="separator">:</span>
+        <span class="digit" id="minute1">0</span>
+        <span class="digit" id="minute2">0</span>
+    </div>
+
+    <button class="fullscreen-btn" id="fullscreenBtn">
+        <span class="icon" id="fullscreenIcon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+            </svg>
+        </span>
+        <span id="fullscreenText">Fullscreen</span>
+    </button>
+
+    <script>
+        // Wake Lock
+        let wakeLock = null;
+        const wakeLockIndicator = document.getElementById('wakeLockIndicator');
+
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    wakeLockIndicator.classList.remove('inactive');
+                    wakeLockIndicator.title = 'Screen Wake Lock: Active';
+                    
+                    wakeLock.addEventListener('release', () => {
+                        wakeLockIndicator.classList.add('inactive');
+                        wakeLockIndicator.title = 'Screen Wake Lock: Inactive';
+                    });
+                } else {
+                    wakeLockIndicator.classList.add('inactive');
+                    wakeLockIndicator.title = 'Wake Lock API not supported';
+                }
+            } catch (err) {
+                console.error('Wake Lock request failed:', err);
+                wakeLockIndicator.classList.add('inactive');
+                wakeLockIndicator.title = 'Wake Lock: Failed to activate';
+            }
+        }
+
+        // Re-request wake lock when page becomes visible
+        document.addEventListener('visibilitychange', async () => {
+            if (document.visibilityState === 'visible') {
+                await requestWakeLock();
+            }
+        });
+
+        // Initial wake lock request
+        requestWakeLock();
+
+        // Time Display
+        const digits = {
+            hour1: document.getElementById('hour1'),
+            hour2: document.getElementById('hour2'),
+            minute1: document.getElementById('minute1'),
+            minute2: document.getElementById('minute2')
+        };
+
+        function updateTime() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            
+            updateDigit('hour1', hours[0]);
+            updateDigit('hour2', hours[1]);
+            updateDigit('minute1', minutes[0]);
+            updateDigit('minute2', minutes[1]);
+        }
+
+        function updateDigit(id, newValue) {
+            const element = digits[id];
+            const currentValue = element.textContent;
+            
+            if (currentValue !== newValue) {
+                element.classList.add('changing');
+                
+                setTimeout(() => {
+                    element.textContent = newValue;
+                    element.classList.remove('changing');
+                }, 250);
+            }
+        }
+
+        // Update time immediately and then every second
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        // Fullscreen functionality
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const fullscreenText = document.getElementById('fullscreenText');
+        const fullscreenIcon = document.getElementById('fullscreenIcon');
+
+        function updateFullscreenButton() {
+            if (document.fullscreenElement) {
+                fullscreenText.textContent = 'Exit Fullscreen';
+                fullscreenIcon.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+                    </svg>
+                `;
+            } else {
+                fullscreenText.textContent = 'Fullscreen';
+                fullscreenIcon.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                    </svg>
+                `;
+            }
+        }
+
+        async function toggleFullscreen() {
+            try {
+                if (!document.fullscreenElement) {
+                    await document.documentElement.requestFullscreen();
+                } else {
+                    await document.exitFullscreen();
+                }
+            } catch (err) {
+                console.error('Fullscreen toggle failed:', err);
+            }
+        }
+
+        fullscreenBtn.addEventListener('click', toggleFullscreen);
+        document.addEventListener('fullscreenchange', updateFullscreenButton);
+    </script>
+</body>
+</html>
