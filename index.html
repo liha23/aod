@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -265,7 +265,7 @@
     </style>
 </head>
 <body>
-    <div class="wake-lock-indicator" id="wakeLockIndicator" title="Screen Wake Lock Status"></div>
+    <div class="wake-lock-indicator" id="wakeLockIndicator" role="status" aria-label="Screen Wake Lock Status: Active" title="Screen Wake Lock Status"></div>
     
     <div class="time-container" id="timeDisplay">
         <span class="digit" id="hour1">0</span>
@@ -277,7 +277,7 @@
 
     <button class="fullscreen-btn" id="fullscreenBtn">
         <span class="icon" id="fullscreenIcon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
             </svg>
         </span>
@@ -295,19 +295,23 @@
                     wakeLock = await navigator.wakeLock.request('screen');
                     wakeLockIndicator.classList.remove('inactive');
                     wakeLockIndicator.title = 'Screen Wake Lock: Active';
+                    wakeLockIndicator.setAttribute('aria-label', 'Screen Wake Lock Status: Active');
                     
                     wakeLock.addEventListener('release', () => {
                         wakeLockIndicator.classList.add('inactive');
                         wakeLockIndicator.title = 'Screen Wake Lock: Inactive';
+                        wakeLockIndicator.setAttribute('aria-label', 'Screen Wake Lock Status: Inactive');
                     });
                 } else {
                     wakeLockIndicator.classList.add('inactive');
                     wakeLockIndicator.title = 'Wake Lock API not supported';
+                    wakeLockIndicator.setAttribute('aria-label', 'Screen Wake Lock Status: Not supported');
                 }
             } catch (err) {
                 console.error('Wake Lock request failed:', err);
                 wakeLockIndicator.classList.add('inactive');
                 wakeLockIndicator.title = 'Wake Lock: Failed to activate';
+                wakeLockIndicator.setAttribute('aria-label', 'Screen Wake Lock Status: Failed to activate');
             }
         }
 
@@ -322,6 +326,7 @@
         requestWakeLock();
 
         // Time Display
+        const DIGIT_TRANSITION_DURATION = 250; // milliseconds
         const digits = {
             hour1: document.getElementById('hour1'),
             hour2: document.getElementById('hour2'),
@@ -350,7 +355,7 @@
                 setTimeout(() => {
                     element.textContent = newValue;
                     element.classList.remove('changing');
-                }, 250);
+                }, DIGIT_TRANSITION_DURATION);
             }
         }
 
